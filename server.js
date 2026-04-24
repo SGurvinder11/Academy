@@ -1,124 +1,56 @@
 const express = require("express");
-const mysql = require("mysql2");
 const cors = require("cors");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// DATABASE CONNECTION
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "Suchet@1128",   // <-- your password
-  database: "cu_lms"
-});
-
-db.connect((err) => {
-  if (err) {
-    console.log("DB Error:", err);
-  } else {
-    console.log("MySQL Connected");
-  }
-});
+// ===== TEMP USERS (FOR LOGIN) =====
+let users = [
+  { username: "admin", password: "admin123" }
+];
 
 // TEST ROUTE
 app.get("/", (req, res) => {
   res.send("Server Working");
 });
 
-
-// ================= AUTH =================
-
 // REGISTER
 app.post("/register", (req, res) => {
   const { username, password } = req.body;
 
-  const sql = "INSERT INTO teachers (username, password) VALUES (?, ?)";
+  users.push({ username, password });
 
-  db.query(sql, [username, password], (err) => {
-    if (err) {
-      console.log(err);
-      return res.status(500).send("Error registering");
-    }
-    res.send("Registered");
-  });
+  res.send({ message: "Registered" });
 });
-
 
 // LOGIN
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  const sql = "SELECT * FROM teachers WHERE username=? AND password=?";
+  const user = users.find(
+    (u) => u.username === username && u.password === password
+  );
 
-  db.query(sql, [username, password], (err, result) => {
-    if (err) {
-      console.log("Login Error:", err);
-      return res.status(500).send({ success: false });
-    }
-
-    if (result.length > 0) {
-      res.send({ success: true });
-    } else {
-      res.send({ success: false });
-    }
-  });
+  if (user) {
+    res.send({ success: true });
+  } else {
+    res.send({ success: false });
+  }
 });
 
-
-// ================= STUDENTS =================
+// ===== DUMMY STUDENTS DATA =====
+const students = [
+  { id: 1, name: "Aman", course_code: "CSE", attendance: 85, marks: 78 },
+  { id: 2, name: "Riya", course_code: "IT", attendance: 60, marks: 88 },
+  { id: 3, name: "Rahul", course_code: "ECE", attendance: 72, marks: 67 },
+];
 
 // GET STUDENTS
 app.get("/students", (req, res) => {
-  db.query("SELECT * FROM students", (err, result) => {
-    if (err) return res.status(500).send(err);
-    res.send(result);
-  });
+  res.send(students);
 });
 
-// ADD STUDENT
-app.post("/add-student", (req, res) => {
-  const { name, course_code, attendance, marks, semester, branch } = req.body;
-
-  const sql = `
-    INSERT INTO students (name, course_code, attendance, marks, semester, branch)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
-
-  db.query(sql, [name, course_code, attendance, marks, semester, branch], (err) => {
-    if (err) return res.status(500).send(err);
-    res.send("Added");
-  });
-});
-
-// DELETE
-app.delete("/delete-student/:id", (req, res) => {
-  db.query("DELETE FROM students WHERE id=?", [req.params.id], (err) => {
-    if (err) return res.status(500).send(err);
-    res.send("Deleted");
-  });
-});
-
-// UPDATE
-app.put("/update-student/:id", (req, res) => {
-  const { name, course_code, attendance, marks, semester, branch } = req.body;
-
-  const sql = `
-    UPDATE students 
-    SET name=?, course_code=?, attendance=?, marks=?, semester=?, branch=?
-    WHERE id=?
-  `;
-
-  db.query(sql, [name, course_code, attendance, marks, semester, branch, req.params.id], (err) => {
-    if (err) return res.status(500).send(err);
-    res.send("Updated");
-  });
-});
-
-
-// SERVER START
 app.listen(5000, () => {
   console.log("Server running on port 5000");
 });
